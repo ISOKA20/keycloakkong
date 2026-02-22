@@ -1,0 +1,33 @@
+_format_version: "3.0"
+
+services:
+  - name: httpbin
+    url: http://httpbin:80
+    routes:
+      - name: api
+        paths:
+          - /api
+
+consumers:
+  - username: master-realm
+    jwt_secrets:
+      - key: http://localhost:8080/realms/master
+        algorithm: RS256
+        rsa_public_key: |
+          -----BEGIN PUBLIC KEY-----
+          MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwB1UYx8QISbvycCzuBFz
+          Weavoqf96ZFX4LqJTGoLLGeqkm/waPC+FZYNpXeudO8wObFWnNHO2DzyCHLGIMF7
+          Dpb/NjEDpWc4UVzXcU9Tyn9f11m13EVSD8xoiD686inQ3XWSLlajPVgB6t96RWFp
+          Ctv0sfoWxAESezvj0caGAajNnr6QznhbuLJuVZvXZs/7xoIgEyOAQBboHjneUNAE
+          i/8cL5uvPsGyoZLvPGYcMuqZYXFZ3Com2ndJ418r9vsIGmQCtIpubR03cS5GxeKE
+          Kg4eeLafEqVBldaOAT8RY/G81FH+ItV+Vku3rETuAoBNnu+mPGvn1RKftgRwKo1T
+          kwIDAQAB
+          -----END PUBLIC KEY-----
+
+plugins:
+  - name: jwt
+    service: httpbin
+    config:
+      key_claim_name: iss
+      claims_to_verify:
+        - exp
