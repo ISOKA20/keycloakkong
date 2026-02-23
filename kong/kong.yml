@@ -1,13 +1,36 @@
 _format_version: "3.0"
 
 services:
+  - name: dotnet-auth
+    url: http://host.docker.internal:5152
+    routes:
+      - name: auth-route
+        paths:
+          - /auth
+        strip_path: false
+
   - name: httpbin
     url: http://httpbin:80
     routes:
       - name: api
         paths:
           - /api
+        strip_path: true
+        plugins:
+          # 1. Tu plugin: Extrae el token de Redis y lo pone en el Header Authorization
+          - name: extract-session
+            config:
+              redis_host: redis
+          
+          # 2. Plugin JWT: Valida el token que puso tu plugin en el header
+          - name: jwt
+            config:
+              key_claim_name: iss
+              claims_to_verify:
+                - exp
+              run_on_preflight: false
 
+# Consumidor que vincula la llave pública de Keycloak con el "iss" del token
 consumers:
   - username: master-realm
     jwt_secrets:
@@ -25,9 +48,19 @@ consumers:
           -----END PUBLIC KEY-----
 
 plugins:
-  - name: jwt
-    service: httpbin
+  - name: cors
     config:
-      key_claim_name: iss
-      claims_to_verify:
-        - exp
+      origins:
+        - http://localhost:4200
+      methods:
+        - GET
+        - POST
+        - OPTIONS
+      credentials: true
+      headers:
+        - Accept
+        - Content-Type
+        - Authorization
+        - Cookie
+      exposed_headers:
+        - Set-Cookie

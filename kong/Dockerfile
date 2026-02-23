@@ -1,21 +1,23 @@
-FROM kong:3.4
+# Usamos la imagen oficial de Kong Gateway 3.9
+FROM kong/kong-gateway:3.9.0.0
 
 USER root
 
-RUN apt-get update && apt-get install -y \
-    git luarocks gcc make unzip curl \
-    libssl-dev libpcre3-dev
+# 1) Copiamos las dependencias de Lua (Redis)
+# Asegúrate de que en tu carpeta local 'vendor/resty' esté el archivo redis.lua
+COPY vendor/resty /usr/local/share/lua/5.1/resty
 
-# librerías necesarias
-RUN luarocks install lua-resty-openidc
-RUN luarocks install lua-resty-session
-RUN luarocks install lua-resty-http
-RUN luarocks install lua-resty-jwt
+# 2) Copiamos tu plugin custom ya refactorizado (el que no tiene BasePlugin)
+# Esto copiará handler.lua y schema.lua a la ruta donde Kong busca plugins
+COPY plugins/extract-session /usr/local/share/lua/5.1/kong/plugins/extract-session
 
-# plugin OIDC community
-RUN git clone https://github.com/nokia/kong-oidc.git \
-    /usr/local/share/lua/5.1/kong/plugins/kong-oidc
+# 3) Habilitamos el plugin en las variables de entorno
+# 'bundled' son los plugins que trae Kong por defecto, 'extract-session' es el tuyo
+ENV KONG_PLUGINS=bundled,extract-session
 
-ENV KONG_PLUGINS=bundled,kong-oidc
+# 4) Ajustamos permisos para que el usuario 'kong' pueda leer los archivos
+RUN chown -R kong:root /usr/local/share/lua/5.1/resty /usr/local/share/lua/5.1/kong/plugins/extract-session \
+    && chmod -R a+rX /usr/local/share/lua/5.1/kong/plugins/extract-session
 
+# Volvemos al usuario no privilegiado por seguridad
 USER kong

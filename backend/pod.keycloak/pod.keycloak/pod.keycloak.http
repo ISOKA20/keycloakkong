@@ -1,0 +1,6 @@
+@pod.keycloak_HostAddress = http://localhost:5152
+
+GET {{pod.keycloak_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
